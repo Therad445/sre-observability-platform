@@ -10,6 +10,24 @@ spec:
   ports:
     - name: mysql
       port: 3306
-  clusterIP: None
+      targetPort: 3306
+  type: ClusterIP
   selector:
     app: mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysqld-exporter
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9104"
+    prometheus.io/path: /metrics
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - name: metrics
+      port: 9104
+      targetPort: 9104

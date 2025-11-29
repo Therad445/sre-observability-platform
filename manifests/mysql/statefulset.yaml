@@ -8,7 +8,7 @@ spec:
     matchLabels:
       app: mysql
       app.kubernetes.io/name: mysql
-  serviceName: mysql
+  serviceName: oncall-mysql
   replicas: 1
   template:
     metadata:
@@ -45,6 +45,29 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 2
             timeoutSeconds: 1
+        - name: mysql-exporter
+          image: prom/mysqld-exporter:v0.14.0
+          ports:
+            - name: metrics
+              containerPort: 9104
+          env:
+            - name: DATA_SOURCE_NAME
+              value: root:1234@(127.0.0.1:3306)/
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9104
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
       volumes:
         - name: data
           emptyDir: {}
+  volumeClaimTemplates: []
