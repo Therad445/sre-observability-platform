@@ -11,7 +11,12 @@ data:
       port: 8080
     debug: True
     oncall_host: oncall.$KUBE_NS.ingress.sre-ab.ru
-    metrics: dummy
+    metrics: prometheus
+    
+    prometheus:
+      oncall-notifier:
+        server_port: 8888
+
     db:
       conn:
         kwargs:
@@ -36,7 +41,7 @@ data:
       skipsend: True
     healthcheck_path: /tmp/status
     messengers:
-      - type: dummy
+      - type: prometheus
         application: oncall
         iris_api_key: magic
 
