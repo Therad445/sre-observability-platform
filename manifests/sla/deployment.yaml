@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sla-calculator
+  namespace: st-ab2-islamov
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sla-calculator
+  template:
+    metadata:
+      labels:
+        app: sla-calculator
+        sage/group: ab2_islamov
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: sla-calculator
+          image: therad445/ab2-sla-calculator:v10
+          imagePullPolicy: Always
+          env:
+            - name: PROBER_METRICS_URL
+              value: "http://prober:9100/metrics"
+            - name: SCRAPE_INTERVAL
+              value: "60"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: METRICS_PORT
+              value: "9101"
+            - name: SLA_WINDOW
+              value: "1h"
+            - name: SAGE_TOKEN
+              value: "<TOKEN>"
+          ports:
+            - containerPort: 9101
+              name: metrics
