@@ -64,7 +64,7 @@ spec:
               while true; do
                 TS=$(date -u +%FT%TZ)
                 HOST=$(hostname)
-                printf '{"@timestamp":"%s","env":"st","system":"oncall","inst":"%s","level":"INFO","message":"sidecar heartbeat"}\n' "$TS" "$HOST"
+                printf '{"env":"st","system":"oncall","inst":"%s","level":"INFO","message":"sidecar heartbeat"}\n' "$HOST"
                 sleep 5
               done
           resources:
