@@ -12,6 +12,11 @@ spec:
   selector:
     app.kubernetes.io/name: oncall
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 8080
       targetPort: 8080
+    - name: metrics
+      protocol: TCP
+      port: 8888
+      targetPort: 8888
