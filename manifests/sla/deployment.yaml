@@ -12,8 +12,8 @@ spec:
     metadata:
       labels:
         app: sla-calculator
-        sage/group: ab2_islamov
       annotations:
+        sage/group: ab2_islamov
         prometheus.io/scrape: "true"
         prometheus.io/port: "9101"
         prometheus.io/path: "/metrics"
