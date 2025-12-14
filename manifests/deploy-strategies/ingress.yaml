@@ -4,6 +4,7 @@ metadata:
   name: my-app-ingress
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$http_x_session_id"
 spec:
   ingressClassName: nginx
   rules:
