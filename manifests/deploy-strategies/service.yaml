@@ -9,6 +9,7 @@ metadata:
 spec:
   selector:
     app: my-app
+    sticky: "true"
   ports:
     - name: http
       protocol: TCP
