@@ -1,25 +1,29 @@
-# **SRE Observability Stack**
+# SRE Observability Stack
 
-Minimal observability environment for measuring service availability in Kubernetes.
-Includes HTTP probing, metrics export, SLA calculation, and integration with Sage Observability.
+Минимальный стенд наблюдаемости для измерения доступности сервиса в Kubernetes.
 
-## Overview
+**Что делает:** периодически проверяет HTTP‑доступность целевого сервиса, экспортирует метрики в формате Prometheus, считает SLA на основе истории проб и (опционально) публикует SLA как ручную метрику в Sage Observability.
 
-This project implements a compact availability monitoring pipeline:
+> Подходит для учебных стендов, тестовых кластеров и компактных демо по SRE/observability.
 
-* periodic HTTP probing of a target service;
-* export of probe metrics (`probe_success`, `probe_failure`, latency);
-* SLA calculation based on historical probe data;
-* publishing SLA as a manual metric to Sage;
-* exposing all metrics via `/metrics` (Prometheus format).
+---
 
-The stack is suitable for test clusters, training stands, or lightweight observability demos.
+## Возможности
 
-## Architecture
+* Периодические HTTP‑пробы целевого сервиса
+* Метрики проб: успех/ошибка/латентность
+* Расчёт SLA по истории проб (скользящее окно)
+* Экспорт SLA в `/metrics`
+* Публикация SLA в Sage Observability (manual metric API)
+* Структурированные JSON‑логи для PQL
+
+---
+
+## Архитектура
 
 ```
                 ┌──────────────────────────┐
-                │       OnCall service     │
+                │        OnCall service    │
                 │   HTTP endpoint to probe │
                 └───────────────┬──────────┘
                                 │
@@ -45,30 +49,32 @@ The stack is suitable for test clusters, training stands, or lightweight observa
                                │
                                ▼
                 ┌──────────────────────────┐
-                │      Sage Observability  │
-                │   PQL logs & metrics     │
+                │     Sage Observability   │
+                │     PQL logs & metrics   │
                 └──────────────────────────┘
 ```
 
-## Components
+---
+
+## Компоненты
 
 ### Prober (`prober/`)
 
-Periodically performs HTTP GET requests to the configured target service and exports metrics:
+Периодически выполняет HTTP GET запросы к конфигурируемой цели и экспортирует метрики:
 
 * `probe_requests_total`
 * `probe_success_total`
 * `probe_failure_total`
 * `probe_duration_seconds`
 
-Log events are emitted as structured JSON suitable for PQL queries.
+Логи событий пишутся в структурированном JSON (удобно для PQL).
 
 ### SLA Calculator (`sla/`)
 
-Consumes historical probe metrics, calculates SLA over a sliding window, and:
+Считывает исторические метрики проб, считает SLA на скользящем окне и:
 
-* exposes `service_sla_percent` via `/metrics`;
-* publishes the SLA value into Sage as a manual metric:
+* экспортирует `service_sla_percent` через `/metrics`;
+* публикует SLA в Sage как manual metric (опционально):
 
   ```
   PUT https://sage.sre-ab.ru/sauron/api/Metric
@@ -76,18 +82,20 @@ Consumes historical probe metrics, calculates SLA over a sliding window, and:
 
 ### Kubernetes manifests (`manifests/`)
 
-Provides deployments and services for:
+Манифесты развёртывания для:
 
-* MySQL (backend for OnCall)
+* MySQL (backend для OnCall)
 * OnCall service
 * Prober
 * SLA Calculator
 
-All metric endpoints are annotated for Prometheus-based scraping.
+Метрик‑эндпоинты размечены аннотациями для Prometheus‑scrape.
 
-## Deployment
+---
 
-```
+## Развёртывание
+
+```bash
 export KUBE_NS=st-your-namespace
 
 # MySQL
@@ -96,34 +104,36 @@ kubectl apply -f manifests/mysql/statefulset.yaml -n $KUBE_NS
 kubectl apply -f manifests/mysql/service.yaml     -n $KUBE_NS
 
 # OnCall
-KUBE_NS=$KUBE_NS envsubst < manifests/oncall/config.yaml    | kubectl apply -f - -n $KUBE_NS
-KUBE_NS=$KUBE_NS envsubst < manifests/oncall/deployment.yaml| kubectl apply -f - -n $KUBE_NS
-KUBE_NS=$KUBE_NS envsubst < manifests/oncall/service.yaml   | kubectl apply -f - -n $KUBE_NS
-KUBE_NS=$KUBE_NS envsubst < manifests/oncall/ingress.yaml   | kubectl apply -f - -n $KUBE_NS
+KUBE_NS=$KUBE_NS envsubst < manifests/oncall/config.yaml     | kubectl apply -f - -n $KUBE_NS
+KUBE_NS=$KUBE_NS envsubst < manifests/oncall/deployment.yaml | kubectl apply -f - -n $KUBE_NS
+KUBE_NS=$KUBE_NS envsubst < manifests/oncall/service.yaml    | kubectl apply -f - -n $KUBE_NS
+KUBE_NS=$KUBE_NS envsubst < manifests/oncall/ingress.yaml    | kubectl apply -f - -n $KUBE_NS
 
 # Prober & SLA Calculator
 kubectl apply -f manifests/prober/ -n $KUBE_NS
 kubectl apply -f manifests/sla/    -n $KUBE_NS
 ```
 
-## Verification
+---
 
-### Local metrics
+## Проверка
 
-```
+### Метрики локально
+
+```bash
 kubectl exec -n $KUBE_NS deploy/prober -- curl -s localhost:9100/metrics
 kubectl exec -n $KUBE_NS deploy/sla-calculator -- curl -s localhost:9101/metrics
 ```
 
-### Probe logs in Sage (PQL)
+### Логи проб в Sage (PQL)
 
 ```
 pql {group="ab2_islamov", system="prober"}
 ```
 
-### Manual SLA metric in Sage
+### Ручная метрика SLA в Sage
 
-```
+```bash
 curl -X POST \
   https://sage.sre-ab.ru/sauron/api/Metric/search \
   -H "Authorization: Bearer $SAGE_TOKEN" \
@@ -139,39 +149,45 @@ curl -X POST \
       }'
 ```
 
-## Demo Script
+---
 
-`demo.sh` prints:
+## Демо
 
-* current probe & SLA metrics;
-* recent probe events from Sage;
-* latest SLA manual metric.
+Скрипт `demo.sh` выводит:
+
+* текущие метрики проб и SLA;
+* последние события проб из Sage;
+* последнюю SLA manual metric.
+
+---
 
 ## Docker
 
-Build:
+Сборка:
 
-```
+```bash
 docker build -t therad445/ab2-prober:<tag> prober/
 docker build -t therad445/ab2-sla-calculator:<tag> sla/
 ```
 
-Publish:
+Публикация:
 
-```
+```bash
 docker push therad445/ab2-prober:<tag>
 docker push therad445/ab2-sla-calculator:<tag>
 ```
 
-## Extensions
+---
 
-The stack can be extended with:
+## Идеи для расширения
 
-* alerting on SLA degradation;
-* Grafana dashboards through the Sage datasource;
-* multiple probers for distributed availability checks;
-* histogram-based latency SLOs.
+* Алертинг при деградации SLA
+* Дашборды Grafana через Sage datasource
+* Несколько проберов для распределённых проверок
+* SLO по латентности на гистограммах
 
-## License
+---
+
+## Лицензия
 
 [MIT](LICENSE)
